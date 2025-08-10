@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Weekly Streak Tracker</title> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="streaks_tracker.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #e8f5e9;
+      padding: 20px;
+      margin: 0;
+      text-align: center;
+    }
+
+    h2 {
+      color: #2e7d32;
+    }
+
+    .week-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 30px;
+    }
+
+    .day-box {
+      width: 110px;
+      padding: 10px;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      position: relative;
+    }
+
+    .diamond {
+      width: 20px;
+      height: 20px;
+      background-color: transparent;
+      transform: rotate(45deg);
+      border: 2px solid #9e9e9e;
+      margin: 0 auto 8px;
+    }
+
+    .diamond.completed {
+      background-color: #4caf50;
+      box-shadow: 0 0 8px #66bb6a;
+      border-color: #2e7d32;
+    }
+
+    .longest-streak {
+      margin: 30px 0 10px;
+      font-size: 18px;
+      color: #1b5e20;
+    }
+
+    .free-streak-saver {
+      margin: 10px auto;
+      padding: 12px 20px;
+      background-color: #a5d6a7;
+      color: #1b5e20;
+      font-weight: bold;
+      border-radius: 8px;
+      width: fit-content;
+    }
+
+    .back-btn {
+      margin-top: 30px;
+      padding: 10px 24px;
+      background-color: #777;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .back-btn:hover {
+      background-color: #555;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🔥 Your Weekly Streaks</h2>
+
+  <!-- Weekly Streak View -->
+  <div class="week-container" id="weekContainer">
+    <!-- Filled dynamically -->
+  </div>
+
+  <!-- Longest Streak Info -->
+  <div class="longest-streak" id="longestStreakText">
+    Longest streak: 0 days
+  </div>
+
+  <!-- Free Streak Saver -->
+  <div class="free-streak-saver">
+    🎁 Free Streak Saver Available!
+  </div>
+
+  <!-- Back Button -->
+  <button class="back-btn" onclick="location.href='home.html'">← Back to Home</button>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDcJm_YT79SG9untudu3ehuAcjGD9jQEns",
+      authDomain: "habits-app-93cb5.firebaseapp.com",
+      databaseURL: "https://habits-app-93cb5-default-rtdb.firebaseio.com",
+      projectId: "habits-app-93cb5",
+      storageBucket: "habits-app-93cb5.appspot.com",
+      messagingSenderId: "592186214298",
+      appId: "1:592186214298:web:3a04ccec96b035d8c31c23",
+      measurementId: "G-J603FGG7YH"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const userId = "user123"; // TODO: Replace with logged-in user's ID
+
+    const weekContainer = document.getElementById("weekContainer");
+    const longestStreakText = document.getElementById("longestStreakText");
+
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date();
+    const currentDayIndex = today.getDay();
+
+    // Get this week's dates
+    function getWeekDates() {
+      const weekDates = [];
+      const start = new Date(today);
+      start.setDate(today.getDate() - currentDayIndex); // start from Sunday
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        const dateStr = d.toISOString().split("T")[0];
+        weekDates.push({ label: weekDays[d.getDay()], date: dateStr });
+      }
+      return weekDates;
+    }
+
+    function displayWeek(dataMap) {
+      weekContainer.innerHTML = '';
+      let longest = 0;
+      let currentStreak = 0;
+
+      getWeekDates().forEach(day => {
+        const isCompleted = dataMap[day.date] === true;
+        if (isCompleted) {
+          currentStreak++;
+          longest = Math.max(longest, currentStreak);
+        } else {
+          currentStreak = 0;
+        }
+
+        const dayBox = document.createElement("div");
+        dayBox.className = "day-box";
+
+        const diamond = document.createElement("div");
+        diamond.className = "diamond";
+        if (isCompleted) diamond.classList.add("completed");
+
+        const label = document.createElement("div");
+        label.textContent = day.label;
+
+        dayBox.appendChild(diamond);
+        dayBox.appendChild(label);
+        weekContainer.appendChild(dayBox);
+      });
+
+      longestStreakText.textContent = `Longest streak: ${longest} day${longest === 1 ? '' : 's'}`;
+    }
+
+    // Load streak data
+    function loadStreakData() {
+      const dates = getWeekDates().map(d => d.date);
+      const dataMap = {};
+      let loaded = 0;
+
+      dates.forEach(date => {
+        db.ref(`habits/${date}/checklistCompleted/${userId}`).once("value", snapshot => {
+          dataMap[date] = snapshot.val() === true;
+          loaded++;
+          if (loaded === dates.length) {
+            displayWeek(dataMap);
+          }
+        });
+      });
+    }
+
+    loadStreakData();
+  </script>
+  <script src="js/streaks_tracker.js"></script>
+
+</body>
+</html>

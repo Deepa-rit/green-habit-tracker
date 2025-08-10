@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Green Habit Tracker – Login/Register</title>
+  <link rel="stylesheet" href="login.css">
+</head>
+<body class="auth-page">
+  <div class="auth-container">
+    <h1>🌿 Green Habit Tracker</h1>
+
+    <!-- Login Form -->
+    <form id="loginForm">
+      <h2>Login</h2>
+      <input type="email" id="loginEmail" placeholder="Email" required>
+      <input type="password" id="loginPassword" placeholder="Password" required>
+      <button type="submit">Login</button>
+      <p>Don’t have an account? <a href="#" onclick="toggleForm('register')">Register</a></p>
+    </form>
+
+    <!-- Register Form -->
+    <form id="registerForm" style="display: none;">
+      <h2>Register</h2>
+      <input type="email" id="registerEmail" placeholder="Email" required>
+      <input type="password" id="registerPassword" placeholder="Password" required>
+      <button type="submit">Register</button>
+      <p>Already have an account? <a href="#" onclick="toggleForm('login')">Login</a></p>
+    </form>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/7.14.5/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.14.5/firebase-auth.js"></script>
+
+  <!-- Firebase Config -->
+  <script>
+    var firebaseConfig = {
+  apiKey: "AIzaSyDcJm_YT79SG9untudu3ehuAcjGD9jQEns",
+  authDomain: "habits-app-93cb5.firebaseapp.com",
+  projectId: "habits-app-93cb5",
+  storageBucket: "habits-app-93cb5.firebasestorage.app",
+  messagingSenderId: "592186214298",
+  appId: "1:592186214298:web:3a04ccec96b035d8c31c23",
+  measurementId: "G-J603FGG7YH"
+};
+      
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+  <!-- Firebase Auth Logic -->
+  <script>
+    // Toggle between login and register forms
+    function toggleForm(formType) {
+      if (formType === 'login') {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('registerForm').style.display = 'none';
+      } else {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('registerForm').style.display = 'block';
+      }
+    }
+
+    // Handle login
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          alert('Login successful!');
+          // Redirect to home or dashboard
+          window.location.href = "home.html";
+        })
+        .catch((error) => {
+          alert('Login failed: ' + error.message);
+        });
+    });
+
+    // Handle registration
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('registerEmail').value;
+      const password = document.getElementById('registerPassword').value;
+      firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          alert('Registration successful!');
+          toggleForm('login'); // After registering, show login form
+        })
+        .catch((error) => {
+          alert('Registration failed: ' + error.message);
+        });
+    });
+  </script>
+</body>
+</html>

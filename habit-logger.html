@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Habit Logger</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Link external stylesheet -->
+  <link rel="stylesheet" href="habit-logger.css" />
+
+  <!-- Firebase CDN -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+  <h1>🌿 Log Your Eco Habits</h1>
+
+<form id="habitForm" class="habit-form">
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="tap" />
+      <span>Turned off tap while brushing</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="shower" />
+      <span>Took a 5-min shower</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="bottle" />
+      <span>Used reusable water bottle</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="bag" />
+      <span>Used cloth/jute shopping bag</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="vegmeal" />
+      <span>Ate vegetarian meal</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="transport" />
+      <span>Used public transport</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="recycle" />
+      <span>Recycled paper</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="tiffin" />
+      <span>Carried tiffin box</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="localveg" />
+      <span>Bought local vegetables</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="clothes" />
+      <span>Donated old clothes</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="bothsides" />
+      <span>Used both sides of paper</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="reusecontainer" />
+      <span>Reused container</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="nostraw" />
+      <span>Avoided single-use straw</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="upcycle" />
+      <span>Upcycled waste into DIY items</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="books" />
+      <span>Borrowed books instead of buying</span>
+    </label>
+  </div>
+  <div class="habit">
+    <label>
+      <input type="checkbox" id="walk" />
+      <span>Walked/Cycled instead of vehicle</span>
+    </label>
+  </div>
+
+  <button type="button" onclick="saveHabits()">💾 Save Habits</button>
+  <button type="button" onclick="location.href='home.html'">🔙 Back</button>
+</form>
+
+
+  <script>
+    // ✅ Your Firebase Configuration
+    const firebaseConfig = {
+  apiKey: "AIzaSyDcJm_YT79SG9untudu3ehuAcjGD9jQEns",
+  authDomain: "habits-app-93cb5.firebaseapp.com",
+  databaseURL: "https://habits-app-93cb5-default-rtdb.firebaseio.com",
+  projectId: "habits-app-93cb5",
+  storageBucket: "habits-app-93cb5.firebasestorage.app",
+  messagingSenderId: "592186214298",
+  appId: "1:592186214298:web:3a04ccec96b035d8c31c23",
+  measurementId: "G-J603FGG7YH"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const habitMetrics = {
+      tap: { water: 12, co2: 0, waste: 0 },
+      shower: { water: 38, co2: 0.1, waste: 0 },
+      bottle: { water: 0, co2: 0.082, waste: 0.02 },
+      bag: { water: 0, co2: 0.15, waste: 0.03 },
+      vegmeal: { water: 1500, co2: 2.5, waste: 0 },
+      transport: { water: 0, co2: 2.5, waste: 0 },
+      recycle: { water: 0, co2: 0.9, waste: 0.1 },
+      tiffin: { water: 0, co2: 0.2, waste: 0.05 },
+      localveg: { water: 0, co2: 0.75, waste: 0 },
+      clothes: { water: 0, co2: 3, waste: 0.5 },
+      bothsides: { water: 0, co2: 0.05, waste: 0.005 },
+      reusecontainer: { water: 0, co2: 0.1, waste: 0.1 },
+      nostraw: { water: 0, co2: 0.05, waste: 0.002 },
+      upcycle: { water: 0, co2: 0.2, waste: 0.15 },
+      books: { water: 0, co2: 3, waste: 0 },
+      walk: { water: 0, co2: 1.75, waste: 0 }
+    };
+
+    function saveHabits() {
+      const user = firebase.auth().currentUser;
+
+      if (!user) {
+        alert("⚠ Please log in first.");
+        return;
+      }
+
+      let total = { water: 0, co2: 0, waste: 0 };
+
+      for (const key in habitMetrics) {
+        const checkbox = document.getElementById(key);
+        if (checkbox && checkbox.checked) {
+          total.water += habitMetrics[key].water;
+          total.co2 += habitMetrics[key].co2;
+          total.waste += habitMetrics[key].waste;
+        }
+      }
+
+      const userRef = database.ref("habit-logs/" + user.uid);
+      userRef.push({
+        timestamp: new Date().toISOString(),
+        water_saved_litres: total.water,
+        co2_reduced_kg: total.co2,
+        waste_reduced_kg: total.waste
+      }).then(() => {
+        alert("✅ Habits logged successfully!");
+        document.getElementById("habitForm").reset();
+      }).catch((error) => {
+        console.error("Error saving data:", error);
+      });
+    }
+
+    // Redirect to login if not signed in
+    firebase.auth().onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = "login.html";
+      }
+    });
+  </script>
+  
+</body>
+</html>  
